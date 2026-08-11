@@ -230,4 +230,22 @@ async def auto_claim_daget(client: Client, message: Message):
             print(f"[STEALTH SYSTEM ERROR] Gagal mengeksekusi tautan: {e}")
 
 
-if __name__ == "__main__":
+if __if __name__ == "__main__":
+    print("[SYSTEM] ==============================================")
+    print("[SYSTEM] Ubot Dana Kaget Premium (Super Protect) Aktif!")
+    print("[SYSTEM] Berjalan senyap di latar belakang...")
+    print("[SYSTEM] ==============================================")
+    
+    # PERBAIKAN FATAL ERROR LINE 223 (PYTHON 3.13 ASYNC COMPATIBILITY)
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    
+    try:
+        loop.run_until_complete(app.start())
+        from pyrogram import idle
+        loop.run_until_complete(idle())
+    except KeyboardInterrupt:
+        pass
+    finally:
+        loop.run_until_complete(app.stop())
+        loop.close()
