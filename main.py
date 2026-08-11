@@ -6,6 +6,7 @@ from pyrogram import Client, filters
 from pyrogram.types import Message
 from pyrogram.enums import ChatAction
 from pyrogram.errors import RPCError
+from pyrogram import idle
 
 # ========================================================
 # 1. KONFIGURASI KREDENSIAL (PRODUKSI & VALIDASI AMAN)
@@ -58,7 +59,7 @@ async def toggle_ubot_status(client: Client, message: Message):
         status_str = "AKTIF" if is_bot_active else "NONAKTIF"
         return await message.reply_text(f"ℹ️ Status ubot saat ini: **{status_str}**.\nJeda aktif: `{MIN_DELAY}` - `{MAX_DELAY}` detik.")
     
-    action = message.command[1].lower()
+    action = message.command.lower()
     if action == "on":
         is_bot_active = True
         await message.reply_text("✅ **Ubot Aktif!** Deteksi otomatis & Mode Stealth berjalan.")
@@ -81,8 +82,8 @@ async def set_click_delay(client: Client, message: Message):
         )
     
     try:
-        new_min = float(message.command[1])
-        new_max = float(message.command[2])
+        new_min = float(message.command)
+        new_max = float(message.command)
         
         if new_min > new_max:
             return await message.reply_text("❌ Nilai minimal tidak boleh lebih besar dari nilai maksimal!")
@@ -112,7 +113,6 @@ async def get_all_ids_and_channels(client: Client, message: Message):
                 
         full_report = text_groups + text_channels
         
-        # Antisipasi jika teks terlalu panjang melebihi limit Telegram (4096 karakter)
         if len(full_report) > 4096:
             for chunk in [full_report[i:i+4096] for i in range(0, len(full_report), 4096)]:
                 await message.reply_text(chunk)
@@ -128,7 +128,7 @@ async def add_group_to_whitelist(client: Client, message: Message):
     if len(message.command) < 2: 
         return await message.reply_text("❌ Format salah. Contoh: `.addgrup -100123456789`")
     try:
-        group_id = int(message.command[1])
+        group_id = int(message.command)
         monitored_groups.add(group_id)
         await message.reply_text(f"✅ ID `{group_id}` berhasil dimasukkan ke daftar pantau khusus.")
     except (ValueError, IndexError):
@@ -141,7 +141,7 @@ async def delete_group_from_whitelist(client: Client, message: Message):
     if len(message.command) < 2: 
         return await message.reply_text("❌ Format salah. Contoh: `.delgrup -100123456789`")
     try:
-        group_id = int(message.command[1])
+        group_id = int(message.command)
         if group_id in monitored_groups:
             monitored_groups.remove(group_id)
             await message.reply_text(f"🗑️ ID `{group_id}` berhasil dihapus dari daftar pantau.")
@@ -173,18 +173,16 @@ async def list_monitored_groups(client: Client, message: Message):
 
 @app.on_message(filters.group & ~filters.me)
 async def auto_claim_daget(client: Client, message: Message):
-    # Validasi sakelar ubot
     if not is_bot_active:
         return
         
-    # Validasi daftar pantau khusus (jika di-set)
     if monitored_groups and message.chat.id not in monitored_groups:
         return
         
     if not message.text:
         return
 
-    # Pemindaian teks link portal bot
+    # Pemindaian teks link portal bot menggunakan regex yang divalidasi
     match = re.search(BOT_LINK_PATTERN, message.text, re.IGNORECASE)
     
     if match:
@@ -200,7 +198,7 @@ async def auto_claim_daget(client: Client, message: Message):
 
         # 🕵️‍♂️ PROTEKSI 2: JEDA MANUSIA ACAK (HUMAN-DELAY SIMULATION)
         sleep_time = random.uniform(MIN_DELAY, MAX_DELAY)
-        print(f"[STEALTH LOG] Link Baru Terdeteksi. Menahan tindakan {sleep_time:.2f} detik...")
+        print(f"[STEALTH LOG] Link Baru Terdeteksi: {start_parameter}. Menahan tindakan {sleep_time:.2f} detik...")
         await asyncio.sleep(sleep_time)
 
         try:
@@ -211,7 +209,7 @@ async def auto_claim_daget(client: Client, message: Message):
             await client.send_chat_action(chat_id=bot_username, action=ChatAction.TYPING)
             await asyncio.sleep(0.3)
 
-            # Eksekusi Tembak API Utama menggunakan pemanggilan Raw API (StartBot)
+            # Eksekusi Tembak API Utama (Auto-Click Instan tanpa memunculkan chat di UI)
             from pyrogram.raw import functions
             peer = await client.resolve_peer(bot_username)
             await client.invoke(
@@ -229,22 +227,8 @@ async def auto_claim_daget(client: Client, message: Message):
         except Exception as e:
             print(f"[STEALTH SYSTEM ERROR] Gagal mengeksekusi tautan: {e}")
 
- async def main():
-    print("[SYSTEM] ==============================================")
-    print("[SYSTEM] Ubot Dana Kaget Premium (Super Protect) Aktif!")
-    print("[SYSTEM] Berjalan senyap di latar belakang...")
-    print("[SYSTEM] ==============================================")
-    
-    # Memulai client ubot secara asinkron murni
-    await app.start()
-    
-    # Menjaga ubot tetap stanby mendengarkan link di latar belakang
-    from pyrogram import idle
-    await idle()
-    
-    # Menghentikan bot dengan bersih saat server dimatikan
-    await app.stop()
 
-if __name__ == "__main__":
-    # Solusi Mutlak Python 3.13: Menggunakan pembungkus otomatis asyncio.run
-    asyncio.run(main())
+# ========================================================
+# 4. MANAJEMEN LOOP ASINKRON (STANDARISASI PYTHON 3.13)
+# ========================================================
+async def main():
