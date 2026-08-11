@@ -4,6 +4,7 @@ import asyncio
 import random
 from pyrogram import Client, filters
 from pyrogram.types import Message
+from pyrogram.errors import RPCError
 
 # ========================================================
 # 1. KONFIGURASI KREDENSIAL (OTOMATIS DARI RAILWAY VARIABLES)
@@ -82,21 +83,26 @@ async def get_all_ids_and_channels(client: Client, message: Message):
     text_groups = "👥 **Daftar ID Grup Anda:**\n\n"
     text_channels = "\n📢 **Daftar ID Channel Anda:**\n\n"
     
-    async for dialog in client.get_dialogs():
-        chat_type = dialog.chat.type.value
-        if chat_type in ["group", "supergroup"]:
-            text_groups += f"• `{dialog.chat.id}` - **{dialog.chat.title}**\n"
-        elif chat_type == "channel":
-            text_channels += f"• `{dialog.chat.id}` - **{dialog.chat.title}**\n"
-            
-    full_report = text_groups + text_channels
-    
-    # Antisipasi jika teks terlalu panjang melebihi limit Telegram (4096 karakter)
-    if len(full_report) > 4096:
-        for chunk in [full_report[i:i+4096] for i in range(0, len(full_report), 4096)]:
-            await message.reply_text(chunk)
-    else:
-        await message.reply_text(full_report)
+    try:
+        async for dialog in client.get_dialogs():
+            if not dialog.chat:
+                continue
+            chat_type = dialog.chat.type.value
+            if chat_type in ["group", "supergroup"]:
+                text_groups += f"• `{dialog.chat.id}` - **{dialog.chat.title}**\n"
+            elif chat_type == "channel":
+                text_channels += f"• `{dialog.chat.id}` - **{dialog.chat.title}**\n"
+                
+        full_report = text_groups + text_channels
+        
+        # Antisipasi jika teks terlalu panjang melebihi limit Telegram (4096 karakter)
+        if len(full_report) > 4096:
+            for chunk in [full_report[i:i+4096] for i in range(0, len(full_report), 4096)]:
+                await message.reply_text(chunk)
+        else:
+            await message.reply_text(full_report)
+    except Exception as e:
+        await message.reply_text(f"❌ Gagal mengambil data ID: {e}")
 
 
 @app.on_message(filters.command("addgrup", prefixes=".") & filters.me)
@@ -203,8 +209,10 @@ async def auto_claim_daget(client: Client, message: Message):
             )
             print(f"[STEALTH SUCCESS] Eksekusi klaim berhasil dikirim untuk token: {start_parameter}")
             
+        except RPCError as rpc_err:
+            print(f"[STEALTH TELEGRAM ERROR] Gagal di tingkat server Telegram: {rpc_err}")
         except Exception as e:
-            print(f"[STEALTH ERROR] Gagal mengeksekusi tautan: {e}")
+            print(f"[STEALTH SYSTEM ERROR] Gagal mengeksekusi tautan: {e}")
 
 
 if __name__ == "__main__":
