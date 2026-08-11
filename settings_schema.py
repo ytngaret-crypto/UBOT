@@ -1,0 +1,17 @@
+SETTINGS_SCHEMA = {
+    "autoreply": ["enabled", "mode"],
+    "antispam": ["enabled", "max_messages", "window_seconds", "mute_seconds"],
+    "business_reply": ["enabled"],
+    "translate": ["enabled", "target_language"],
+    "ai": ["enabled", "system_prompt", "model"],
+    "ocr": ["enabled", "language"],
+    "music": ["enabled", "provider"],
+    "movie": ["enabled", "language"],
+    "game": ["enabled", "xp_per_win"],
+    "quiz": ["enabled", "question_count"],
+    "random": ["enabled"],
+    "textgen": ["enabled", "model"],
+    "texttools": ["enabled"],
+    "jashare": ["enabled", "interval_seconds"],
+    "payment": ["enabled"],
+}
