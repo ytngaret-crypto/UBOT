@@ -229,23 +229,22 @@ async def auto_claim_daget(client: Client, message: Message):
         except Exception as e:
             print(f"[STEALTH SYSTEM ERROR] Gagal mengeksekusi tautan: {e}")
 
-
-if __if __name__ == "__main__":
+ async def main():
     print("[SYSTEM] ==============================================")
     print("[SYSTEM] Ubot Dana Kaget Premium (Super Protect) Aktif!")
     print("[SYSTEM] Berjalan senyap di latar belakang...")
     print("[SYSTEM] ==============================================")
     
-    # PERBAIKAN FATAL ERROR LINE 223 (PYTHON 3.13 ASYNC COMPATIBILITY)
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+    # Memulai client ubot secara asinkron murni
+    await app.start()
     
-    try:
-        loop.run_until_complete(app.start())
-        from pyrogram import idle
-        loop.run_until_complete(idle())
-    except KeyboardInterrupt:
-        pass
-    finally:
-        loop.run_until_complete(app.stop())
-        loop.close()
+    # Menjaga ubot tetap stanby mendengarkan link di latar belakang
+    from pyrogram import idle
+    await idle()
+    
+    # Menghentikan bot dengan bersih saat server dimatikan
+    await app.stop()
+
+if __name__ == "__main__":
+    # Solusi Mutlak Python 3.13: Menggunakan pembungkus otomatis asyncio.run
+    asyncio.run(main())
