@@ -4,17 +4,34 @@ import asyncio
 import random
 from pyrogram import Client, filters
 from pyrogram.types import Message
+from pyrogram.enums import ChatAction
 from pyrogram.errors import RPCError
 
 # ========================================================
-# 1. KONFIGURASI KREDENSIAL (OTOMATIS DARI RAILWAY VARIABLES)
+# 1. KONFIGURASI KREDENSIAL (PRODUKSI & VALIDASI AMAN)
 # ========================================================
-API_ID = int(os.environ.get("API_ID", 1234567)) 
-API_HASH = os.environ.get("API_HASH", "your_api_hash_here")
+API_ID_ENV = os.environ.get("API_ID")
+API_HASH = os.environ.get("API_HASH")
 STRING_SESSION = os.environ.get("STRING_SESSION")
 
+# Validasi awal sebelum bot di-start untuk mencegah EOFError di Railway
+if not API_ID_ENV or not API_HASH or not STRING_SESSION:
+    print("[ERROR FATAL] Variabel ENV tidak lengkap di Railway!")
+    print(f"-> API_ID ditemukan: {bool(API_ID_ENV)}")
+    print(f"-> API_HASH ditemukan: {bool(API_HASH)}")
+    print(f"-> STRING_SESSION ditemukan: {bool(STRING_SESSION)}")
+    print("[SYSTEM] Mematikan aplikasi secara aman untuk menghindari perulangan crash.")
+    exit(1)
+
+API_ID = int(API_ID_ENV)
+
 # Inisialisasi Ubot menggunakan String Session agar login permanen di Cloud
-app = Client("my_ubot", api_id=API_ID, api_hash=API_HASH, session_string=STRING_SESSION)
+app = Client(
+    name="my_ubot", 
+    api_id=API_ID, 
+    api_hash=API_HASH, 
+    session_string=STRING_SESSION.strip()
+)
 
 # Pola Regex untuk mendeteksi link Telegram Bot dengan parameter start
 BOT_LINK_PATTERN = r"(?:https?:\/\/)?(?:t\.me|telegram\.me)\/([A-Za-z0-9_]+bot)\?start=([A-Za-z0-9_\-]+)"
@@ -73,8 +90,8 @@ async def set_click_delay(client: Client, message: Message):
         MIN_DELAY = new_min
         MAX_DELAY = new_max
         await message.reply_text(f"⚡ **Jeda Klik Berhasil Diubah!**\nUbot akan menahan klik secara acak antara `{MIN_DELAY}` hingga `{MAX_DELAY}` detik.")
-    except ValueError:
-        await message.reply_text("❌ Input harus berupa angka atau desimal menggunakan titik (contoh: 1.5).")
+    except (ValueError, IndexError):
+        await message.reply_text("❌ Input salah! Harus berupa angka numerik/desimal. Contoh: `.setdelay 1.5 3.0`")
 
 
 @app.on_message(filters.command("idgrup", prefixes=".") & filters.me)
@@ -114,8 +131,8 @@ async def add_group_to_whitelist(client: Client, message: Message):
         group_id = int(message.command[1])
         monitored_groups.add(group_id)
         await message.reply_text(f"✅ ID `{group_id}` berhasil dimasukkan ke daftar pantau khusus.")
-    except ValueError:
-        await message.reply_text("❌ ID grup harus berupa angka numerik.")
+    except (ValueError, IndexError):
+        await message.reply_text("❌ ID grup harus berupa angka numerik yang valid.")
 
 
 @app.on_message(filters.command("delgrup", prefixes=".") & filters.me)
@@ -130,7 +147,7 @@ async def delete_group_from_whitelist(client: Client, message: Message):
             await message.reply_text(f"🗑️ ID `{group_id}` berhasil dihapus dari daftar pantau.")
         else:
             await message.reply_text("❌ ID grup tersebut tidak ada di dalam daftar pantau.")
-    except ValueError:
+    except (ValueError, IndexError):
         await message.reply_text("❌ ID grup harus berupa angka.")
 
 
@@ -146,7 +163,6 @@ async def list_monitored_groups(client: Client, message: Message):
             chat = await client.get_chat(g_id)
             text += f"• `{g_id}` - **{chat.title}**\n"
         except Exception:
-            # Jika grup error/tidak ditemukan, ubot tidak akan crash melainkan melompati baris ini
             text += f"• `{g_id}` - *(Grup Tidak Aktif/Keluar)*\n"
     await message.reply_text(text)
 
@@ -192,11 +208,10 @@ async def auto_claim_daget(client: Client, message: Message):
             await client.read_chat_history(chat_id=message.chat.id, max_id=message.id)
 
             # 🕵️‍♂️ PROTEKSI 4: SIMULASI AKSI MENGETIK (TYPING ACTION MASKING)
-            async with client.send_action(bot_username, "typing"):
-                await asyncio.sleep(0.2)
+            await client.send_chat_action(chat_id=bot_username, action=ChatAction.TYPING)
+            await asyncio.sleep(0.3)
 
-            # Eksekusi Tembak API Utama (Klik /Start Bot Senyap) menggunakan pemanggilan Raw API (StartBot)
-            # Ini jauh lebih aman dan stabil dari crash dibanding metode start_bot standar
+            # Eksekusi Tembak API Utama menggunakan pemanggilan Raw API (StartBot)
             from pyrogram.raw import functions
             peer = await client.resolve_peer(bot_username)
             await client.invoke(
@@ -216,8 +231,3 @@ async def auto_claim_daget(client: Client, message: Message):
 
 
 if __name__ == "__main__":
-    print("[SYSTEM] ==============================================")
-    print("[SYSTEM] Ubot Dana Kaget Premium (Super Protect) Aktif!")
-    print("[SYSTEM] Berjalan senyap di latar belakang...")
-    print("[SYSTEM] ==============================================")
-    app.run()
