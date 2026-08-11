@@ -5,6 +5,24 @@ import random
 from pyrogram import Client, filters
 from pyrogram.types import Message
 
+# =====================================================================
+# PATCH UNTUK MEMPERBAIKI BUG INTERNAL PYROGRAM (PEER ID INVALID)
+# =====================================================================
+from pyrogram import utils
+
+def get_peer_type_new(peer_id: int) -> str:
+    peer_id_str = str(peer_id)
+    if not peer_id_str.startswith("-"):
+        return "user"
+    elif peer_id_str.startswith("-100"):
+        return "channel"
+    else:
+        return "chat"
+
+# Paksa Pyrogram menggunakan fungsi pencarian baru yang mendukung ID panjang
+utils.get_peer_type = get_peer_type_new
+# =====================================================================
+
 # ========================================================
 # 1. KONFIGURASI KREDENSIAL (OTOMATIS DARI RAILWAY VARIABLES)
 # ========================================================
