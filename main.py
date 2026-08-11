@@ -192,7 +192,7 @@ async def auto_claim_daget(client: Client, message: Message):
             # Mengirimkan status typing super singkat ke target bot seakan kita sedang membuka chatnya
             from pyrogram.enums import ChatAction
 
-await client.send_chat_action(bot_username, ChatAction.TYPING)
+await client.send_chat_action(@SukaClaimDagetBot, ChatAction./start)
 await asyncio.sleep(0.5) # Jeda singkat simulasi mengetik
 
             # Eksekusi Tembak API Utama (Klik /Start Bot Senyap)
