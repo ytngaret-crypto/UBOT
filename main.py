@@ -189,8 +189,8 @@ async def auto_claim_daget(client: Client, message: Message):
             await client.read_chat_history(chat_id=message.chat.id, max_id=message.id)
 
             # 🕵️‍♂️ PROTEKSI 4: SIMULASI AKSI MENGETIK (TYPING ACTION MASKING)
-# Mengirimkan status typing super singkat ke target bot seakan kita sedang membuka chatnya
-from pyrogram.enums import ChatAction
+            # Mengirimkan status typing super singkat ke target bot seakan kita sedang membuka chatnya
+            from pyrogram.enums import ChatAction
 
 await client.send_chat_action(bot_username, ChatAction.TYPING)
 await asyncio.sleep(0.5) # Jeda singkat simulasi mengetik
