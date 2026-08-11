@@ -232,3 +232,19 @@ async def auto_claim_daget(client: Client, message: Message):
 # 4. MANAJEMEN LOOP ASINKRON (STANDARISASI PYTHON 3.13)
 # ========================================================
 async def main():
+    print("[SYSTEM] ==============================================")
+    print("[SYSTEM] Ubot Dana Kaget Premium (Super Protect) Aktif!")
+    print("[SYSTEM] Berjalan senyap di latar belakang...")
+    print("[SYSTEM] ==============================================")
+    
+    await app.start()
+    await idle()
+
+if __name__ == "__main__":
+    # Membuat loop mandiri yang kebal dari interupsi penutupan internal Python 3.13
+    try:
+        asyncio.run(main())
+    except (KeyboardInterrupt, SystemExit):
+        pass
+    except Exception as e:
+        print(f"[SYSTEM LOG] Mengabaikan gangguan loop penutupan: {e}")
