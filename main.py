@@ -140,7 +140,8 @@ async def list_monitored_groups(client: Client, message: Message):
             chat = await client.get_chat(g_id)
             text += f"• `{g_id}` - **{chat.title}**\n"
         except Exception:
-            text += f"• `{g_id}` - (Gagal memuat nama)\n"
+            # Jika grup error/tidak ditemukan, ubot tidak akan crash melainkan melompati baris ini
+            text += f"• `{g_id}` - *(Grup Tidak Aktif/Keluar)*\n"
     await message.reply_text(text)
 
 
@@ -166,7 +167,7 @@ async def auto_claim_daget(client: Client, message: Message):
     
     if match:
         bot_username = match.group(1)      
-        start_parameter = match.group(2)   # Token unik link (misal: DAGET_N26811km503)
+        start_parameter = match.group(2)   
 
         # 🛑 PROTEKSI 1: SISTEM ANTI-DUPLIKASI KLIKS
         if start_parameter in clicked_links:
@@ -176,29 +177,33 @@ async def auto_claim_daget(client: Client, message: Message):
         clicked_links.add(start_parameter)
 
         # 🕵️‍♂️ PROTEKSI 2: JEDA MANUSIA ACAK (HUMAN-DELAY SIMULATION)
-        # Menghindar dari deteksi log bot owner yang mem-banned akun dengan klik < 0.5 detik konstan
         sleep_time = random.uniform(MIN_DELAY, MAX_DELAY)
-        print(f"[STEALTH LOG] Link Baru Terdeteksi. Menahan tindakan {sleep_time:.2f} detik agar natural...")
+        print(f"[STEALTH LOG] Link Baru Terdeteksi. Menahan tindakan {sleep_time:.2f} detik...")
         await asyncio.sleep(sleep_time)
 
         try:
             # 🕵️‍♂️ PROTEKSI 3: BACA RIWAYAT (READ CHAT HISTORY)
-            # Menandai pesan di grup sebagai 'Read' (Centang Dua) sebelum melakukan klik.
-            # Akun asli pasti membaca pesan grup dulu, ubot ilegal biasanya melewatkan proses ini.
             await client.read_chat_history(chat_id=message.chat.id, max_id=message.id)
 
             # 🕵️‍♂️ PROTEKSI 4: SIMULASI AKSI MENGETIK (TYPING ACTION MASKING)
-            # Mengirimkan status typing super singkat ke target bot seakan kita sedang membuka chatnya
             async with client.send_action(bot_username, "typing"):
                 await asyncio.sleep(0.2)
 
-            # Eksekusi Tembak API Utama (Klik /Start Bot Senyap)
-            # Seluruh proses ini 100% silent, tidak mengirim logs apa pun ke grup chat Anda.
-            await client.start_bot(bot_username, start_parameter)
+            # Eksekusi Tembak API Utama (Klik /Start Bot Senyap) menggunakan pemanggilan Raw API (StartBot)
+            # Ini jauh lebih aman dan stabil dari crash dibanding metode start_bot standar
+            from pyrogram.raw import functions
+            peer = await client.resolve_peer(bot_username)
+            await client.invoke(
+                functions.messages.StartBot(
+                    bot=peer,
+                    peer=peer,
+                    random_id=random.randint(1, 999999),
+                    start_param=start_parameter
+                )
+            )
             print(f"[STEALTH SUCCESS] Eksekusi klaim berhasil dikirim untuk token: {start_parameter}")
             
         except Exception as e:
-            # Logs hanya muncul di konsol internal Railway Anda, rahasia dari Telegram
             print(f"[STEALTH ERROR] Gagal mengeksekusi tautan: {e}")
 
 
